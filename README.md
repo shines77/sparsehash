@@ -9,8 +9,8 @@ Update history
 
 * update Visual Studio 2005 solution files
 * add Visual Studio 2015 solution files
-* fixed errors and warnings on Visual Studio 2015
 * add x64 mode on Visual Studio 2015
+* fixed errors and warnings on Visual Studio 2015
 * update .gitignore file and add more ignore setting
 
 (Last updated: 2020/09/22, shines77) 
