@@ -32,13 +32,15 @@
  */
 
 #include <sparsehash/internal/sparseconfig.h>
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN64)
 # error You should only be including windows/port.cc in a windows environment!
 #endif
 
 #include "config.h"
 #include <stdarg.h>    // for va_list, va_start, va_end
 #include "port.h"
+
+#if defined(_MSC_VER) && (_MSC_VER < 1800)
 
 // Calls the windows _vsnprintf, but always NUL-terminate.
 int snprintf(char *str, size_t size, const char *format, ...) {
@@ -51,6 +53,8 @@ int snprintf(char *str, size_t size, const char *format, ...) {
   va_end(ap);
   return r;
 }
+
+#endif
 
 std::string TmpFile(const char* basename) {
   char tmppath_buffer[1024];

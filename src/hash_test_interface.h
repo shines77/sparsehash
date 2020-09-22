@@ -355,7 +355,7 @@ class BaseHashtableInterface {
   }
 
   // low-level stats
-  int num_table_copies() const { return ht_.num_table_copies(); }
+  size_t num_table_copies() const { return ht_.num_table_copies(); }
 
   // Not part of the hashtable API, but is provided to make testing easier.
   virtual key_type get_key(const value_type& value) const = 0;

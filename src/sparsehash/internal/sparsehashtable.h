@@ -433,7 +433,7 @@ class sparse_hashtable {
   allocator_type get_allocator() const    { return table.get_allocator(); }
 
   // Accessor function for statistics gathering.
-  int num_table_copies() const { return settings.num_ht_copies(); }
+  size_t num_table_copies() const { return settings.num_ht_copies(); }
 
  private:
   // We need to copy values when we set the special marker for deleted

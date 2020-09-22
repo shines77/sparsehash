@@ -103,7 +103,11 @@ static bool FLAGS_test_16_bytes = true;
 static bool FLAGS_test_256_bytes = true;
 
 #if defined(HAVE_UNORDERED_MAP)
+#if defined(_MSC_VER) && (_MSC_VER < 1800)
 using HASH_NAMESPACE::unordered_map;
+#else
+using std::unordered_map;
+#endif
 #elif defined(HAVE_HASH_MAP) || defined(_MSC_VER)
 using HASH_NAMESPACE::hash_map;
 #endif
@@ -510,7 +514,7 @@ static void time_map_fetch_sequential(int iters) {
 // Apply a pseudorandom permutation to the given vector.
 static void shuffle(vector<int>* v) {
   srand(9);
-  for (int n = v->size(); n >= 2; n--) {
+  for (size_t n = v->size(); n >= 2; n--) {
     swap((*v)[n - 1], (*v)[static_cast<unsigned>(rand()) % n]);
   }
 }
@@ -680,6 +684,16 @@ template<class ObjType>
 static void test_all_maps(int obj_size, int iters) {
   const bool stress_hash_function = obj_size <= 8;
 
+  if (FLAGS_test_map)
+    measure_map< EasyUseMap<ObjType, int>,
+                 EasyUseMap<ObjType*, int> >(
+        "STANDARD MAP", obj_size, iters, false);
+
+  if (FLAGS_test_hash_map)
+    measure_map< EasyUseHashMap<ObjType, int, HashFn>,
+                 EasyUseHashMap<ObjType*, int, HashFn> >(
+        "STANDARD HASH_MAP", obj_size, iters, stress_hash_function);
+
   if (FLAGS_test_sparse_hash_map)
     measure_map< EasyUseSparseHashMap<ObjType, int, HashFn>,
                  EasyUseSparseHashMap<ObjType*, int, HashFn> >(
@@ -689,16 +703,6 @@ static void test_all_maps(int obj_size, int iters) {
     measure_map< EasyUseDenseHashMap<ObjType, int, HashFn>,
                  EasyUseDenseHashMap<ObjType*, int, HashFn> >(
         "DENSE_HASH_MAP", obj_size, iters, stress_hash_function);
-
-  if (FLAGS_test_hash_map)
-    measure_map< EasyUseHashMap<ObjType, int, HashFn>,
-                 EasyUseHashMap<ObjType*, int, HashFn> >(
-        "STANDARD HASH_MAP", obj_size, iters, stress_hash_function);
-
-  if (FLAGS_test_map)
-    measure_map< EasyUseMap<ObjType, int>,
-                 EasyUseMap<ObjType*, int> >(
-        "STANDARD MAP", obj_size, iters, false);
 }
 
 int main(int argc, char** argv) {

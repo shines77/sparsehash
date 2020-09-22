@@ -250,10 +250,14 @@ struct Alloc {
   };
 
   bool operator==(const Alloc<T,SizeT,MAX_SIZE>& that) {
-    return this->id_ == that.id_ && this->count_ == that.count_;
+    return is_equal(that);
   }
   bool operator!=(const Alloc<T,SizeT,MAX_SIZE>& that) {
     return !this->operator==(that);
+  }
+
+  bool is_equal(const Alloc<T,SizeT,MAX_SIZE>& that) const {
+      return (this->id_ == that.id_ && this->count_ == that.count_);
   }
 
   int id() const { return id_; }
@@ -267,6 +271,15 @@ struct Alloc {
   int* count_;
 };
 
+template <typename T, typename SizeT = size_t, SizeT MAX_SIZE = static_cast<SizeT>(~0)>
+inline bool operator == (const Alloc<T,SizeT,MAX_SIZE>& lhs, const Alloc<T,SizeT,MAX_SIZE>& rhs) {
+  return lhs.is_equal(rhs);
+}
+
+template <typename T, typename SizeT = size_t, SizeT MAX_SIZE = static_cast<SizeT>(~0)>
+inline bool operator != (const Alloc<T,SizeT,MAX_SIZE>& lhs, const Alloc<T,SizeT,MAX_SIZE>& rhs) {
+  return !lhs.is_equal(rhs);
+}
 
 // Below are a few fun routines that convert a value into a key, used
 // for dense_hashtable and sparse_hashtable.  It's our responsibility
@@ -352,18 +365,18 @@ template<> pair<const char* const,ValueType> UniqueObjectHelper(int index) {
 
 class ValueSerializer {
  public:
-  bool operator()(FILE* fp, const int& value) {
+  bool operator()(FILE* fp, const size_t& value) {
     return fwrite(&value, sizeof(value), 1, fp) == 1;
   }
-  bool operator()(FILE* fp, int* value) {
+  bool operator()(FILE* fp, size_t* value) {
     return fread(value, sizeof(*value), 1, fp) == 1;
   }
   bool operator()(FILE* fp, const string& value) {
-    const int size = value.size();
+    const size_t size = value.size();
     return (*this)(fp, size) && fwrite(value.c_str(), size, 1, fp) == 1;
   }
   bool operator()(FILE* fp, string* value) {
-    int size;
+    size_t size;
     if (!(*this)(fp, &size)) return false;
     char* buf = new char[size];
     if (fread(buf, size, 1, fp) != 1) {
@@ -1917,7 +1930,7 @@ TEST(HashtableTest, ResizeWithoutShrink) {
   ht.set_empty_key(0);
   ht.set_deleted_key(1);
   ht.min_load_factor(0);
-  ht.max_load_factor(0.2);
+  ht.max_load_factor(0.2f);
 
   for (size_t i = 0; i < N; ++i) {
     for (size_t j = 0; j < max_entries; ++j) {

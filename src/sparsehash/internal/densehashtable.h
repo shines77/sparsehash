@@ -346,7 +346,7 @@ class dense_hashtable {
   }
 
   // Accessor function for statistics gathering.
-  int num_table_copies() const { return settings.num_ht_copies(); }
+  size_t num_table_copies() const { return settings.num_ht_copies(); }
 
  private:
   // Annoyingly, we can't copy values around, because they might have
@@ -1159,7 +1159,7 @@ class dense_hashtable {
         return false;
       for ( int bit = 0; bit < 8; ++bit ) {
         if ( i + bit < num_buckets && (bits & (1 << bit)) ) {  // not empty
-          if ( !serializer(fp, &table[i + bit]) ) return false;
+          if ( !serializer(fp, table[i + bit]) ) return false;
         }
       }
     }

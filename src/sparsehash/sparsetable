@@ -1765,7 +1765,7 @@ class sparsetable {
       return false;
     for ( nonempty_iterator it = nonempty_begin();
           it != nonempty_end(); ++it ) {
-      if ( !serializer(fp, &*it) )  return false;
+      if ( !serializer(fp, *it) )  return false;
     }
     return true;
   }

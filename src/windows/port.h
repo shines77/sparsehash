@@ -44,7 +44,7 @@
 #include <sparsehash/internal/sparseconfig.h>
 #include "config.h"
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_WIN64)
 
 #define WIN32_LEAN_AND_MEAN  /* We always want minimal includes */
 #include <windows.h>
@@ -61,9 +61,15 @@
 #define unlink  _unlink
 #define strdup  _strdup
 
+#ifndef __attribute__
+#define __attribute__(x)
+#endif
+
+#if defined(_MSC_VER) && (_MSC_VER < 1800)
 // We can't just use _snprintf as a drop-in replacement, because it
 // doesn't always NUL-terminate. :-(
 extern int snprintf(char *str, size_t size, const char *format, ...);
+#endif
 
 extern std::string TmpFile(const char* basename); // used in hashtable_unittest
 
