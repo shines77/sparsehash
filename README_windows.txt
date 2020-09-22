@@ -1,6 +1,10 @@
 This project has been ported to Windows.  A working solution file
 exists in this directory:
-    sparsehash.sln
+
+Visusl Studio 2005:
+
+    sparsehash-vc2005.sln
+    google-sparsehash-vc2005.sln
 
 You can load this solution file into either VC++ 7.1 (Visual Studio
 2003) or VC++ 8.0 (Visual Studio 2005) -- in the latter case, it will
@@ -22,4 +26,15 @@ them on the sparsehash Google Code site:
    http://groups.google.com/group/google-sparsehash
    http://code.google.com/p/sparsehash/issues/list
 
+   https://github.com/sparsehash/sparsehash
+
 -- craig
+
+Visusl Studio 2015:
+
+    sparsehash-vc2015.sln
+    google-sparsehash-vc2015.sln
+
+    https://github.com/shines77/sparsehash
+
+-- shines77  (2020/09/22)

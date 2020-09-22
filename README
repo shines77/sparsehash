@@ -1,3 +1,22 @@
+# sparsehash
+
+This is fork from [https://github.com/sparsehash/sparsehash](https://github.com/sparsehash/sparsehash)
+
+I made a little improvement.
+
+Update history
+--------------
+
+* update Visual Studio 2005 solution files
+* add Visual Studio 2015 solution files
+* fixed errors and warnings on Visual Studio 2015
+* add x64 mode on Visual Studio 2015
+* update .gitignore file and add more ignore setting
+
+(Last updated: 2020/09/22, shines77) 
+
+INTRODUCTION
+------------
 This directory contains several hash-map implementations, similar in
 API to SGI's hash_map class, but with different performance
 characteristics.  sparse_hash_map uses very little space overhead, 1-2
