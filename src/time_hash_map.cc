@@ -75,6 +75,9 @@ extern "C" {
 #endif      // for uname()
 }
 
+#define HAVE_JSTD_HASH_MAP      1
+#define HAVE_GOLD_HASH_MAP      1
+
 // The functions that we call on each map, that differ for different types.
 // By default each is a noop, but we redefine them for types that need them.
 
@@ -86,16 +89,27 @@ extern "C" {
 #include <sparsehash/dense_hash_map>
 #include <sparsehash/sparse_hash_map>
 
+#ifdef HAVE_JSTD_HASH_MAP
+#include <jstd/hash/dictionary.h>
+#endif
+
+#ifdef HAVE_GOLD_HASH_MAP
+#include <terark/gold_hash_map.hpp>
+#endif
+
 using std::map;
 using std::swap;
 using std::vector;
 using GOOGLE_NAMESPACE::dense_hash_map;
 using GOOGLE_NAMESPACE::sparse_hash_map;
 
-static bool FLAGS_test_sparse_hash_map = true;
-static bool FLAGS_test_dense_hash_map = true;
-static bool FLAGS_test_hash_map = true;
 static bool FLAGS_test_map = true;
+static bool FLAGS_test_hash_map = true;
+static bool FLAGS_test_sparse_hash_map = false;
+static bool FLAGS_test_dense_hash_map = true;
+
+static bool FLAGS_test_jstd_hash_map = true;
+static bool FLAGS_test_gold_hash_map = true;
 
 static bool FLAGS_test_4_bytes = true;
 static bool FLAGS_test_8_bytes = true;
@@ -180,6 +194,23 @@ class EasyUseMap : public map<K,V> {
  public:
   void resize(size_t) { }   // map<> doesn't support resize
 };
+
+#if defined(HAVE_JSTD_HASH_MAP)
+template<typename K, typename V, typename H>
+class EasyUseJStdHashMap : public jstd::Dictionary<K,V,H> {
+  public:
+    // Don't need to do anything
+};
+#endif
+
+#if defined(HAVE_GOLD_HASH_MAP)
+template<typename K, typename V, typename H>
+class EasyUseGoldHashMap : public terark::gold_hash_map<K,V,H> {
+ public:
+  // resize() is called rehash() in tr1
+  void resize(size_t r) { this->rehash(r); }
+};
+#endif
 
 
 // Returns the number of hashes that have been done since the last
@@ -642,8 +673,11 @@ static void stresshashfunction(int desired_insertions,
     }
     total_seconds += t.UserTime();
   }
-  printf("stresshashfunction map_size=%d stride=%d: %.1fns/insertion\n",
-         map_size, stride, total_seconds * 1e9 / num_insertions);
+
+  if (num_insertions != 0) {
+    printf("stresshashfunction map_size=%d stride=%d: %.1fns/insertion\n",
+           map_size, stride, total_seconds * 1e9 / num_insertions);
+  }
 }
 
 template<class MapType>
@@ -703,6 +737,20 @@ static void test_all_maps(int obj_size, int iters) {
     measure_map< EasyUseDenseHashMap<ObjType, int, HashFn>,
                  EasyUseDenseHashMap<ObjType*, int, HashFn> >(
         "DENSE_HASH_MAP", obj_size, iters, stress_hash_function);
+
+#ifdef HAVE_JSTD_HASH_MAP
+  if (FLAGS_test_jstd_hash_map)
+    measure_map< EasyUseJStdHashMap<ObjType, int, HashFn>,
+                 EasyUseJStdHashMap<ObjType*, int, HashFn> >(
+        "jstd::Dictionary", obj_size, iters, stress_hash_function);
+#endif
+
+#ifdef HAVE_GOLD_HASH_MAP
+  if (FLAGS_test_gold_hash_map)
+    measure_map< EasyUseJStdHashMap<ObjType, int, HashFn>,
+                 EasyUseJStdHashMap<ObjType*, int, HashFn> >(
+        "terark::gold_hash_map", obj_size, iters, stress_hash_function);
+#endif
 }
 
 int main(int argc, char** argv) {
