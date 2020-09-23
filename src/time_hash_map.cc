@@ -54,6 +54,8 @@
 //
 // See PERFORMANCE for the output of one example run.
 
+#define NOMINMAX
+
 #include <sparsehash/internal/sparseconfig.h>
 #include <config.h>
 #ifdef HAVE_INTTYPES_H
@@ -90,7 +92,45 @@ extern "C" {
 #include <sparsehash/sparse_hash_map>
 
 #ifdef HAVE_JSTD_HASH_MAP
+
+#ifndef __SSE4_2__
+#define __SSE4_2__              1
+#endif
+
+/* SIMD support features */
+#define JSTD_HAVE_MMX           1
+#define JSTD_HAVE_SSE           1
+#define JSTD_HAVE_SSE2          1
+#define JSTD_HAVE_SSE3          1
+#define JSTD_HAVE_SSSE3         1
+#define JSTD_HAVE_SSE4          1
+#define JSTD_HAVE_SSE4A         1
+#define JSTD_HAVE_SSE4_1        1
+#define JSTD_HAVE_SSE4_2        1
+
+#if __SSE4_2__
+
+// Support SSE 4.2: _mm_crc32_u32(), _mm_crc32_u64().
+#define JSTD_HAVE_SSE42_CRC32C  1
+
+// Support Intel SMID SHA module: sha1 & sha256, it's higher than SSE 4.2 .
+// _mm_sha1msg1_epu32(), _mm_sha1msg2_epu32() and so on.
+#define JSTD_HAVE_SMID_SHA      0
+
+#endif // __SSE4_2__
+
+// String compare mode
+#define STRING_UTILS_STL        0
+#define STRING_UTILS_U64        1
+#define STRING_UTILS_SSE42      2
+
+#define STRING_UTILS_MODE       STRING_UTILS_SSE42
+
+// Use in <jstd/support/PowerOf2.h>
+#define JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION    1
+
 #include <jstd/hash/dictionary.h>
+
 #endif
 
 #ifdef HAVE_GOLD_HASH_MAP
@@ -747,8 +787,8 @@ static void test_all_maps(int obj_size, int iters) {
 
 #ifdef HAVE_GOLD_HASH_MAP
   if (FLAGS_test_gold_hash_map)
-    measure_map< EasyUseJStdHashMap<ObjType, int, HashFn>,
-                 EasyUseJStdHashMap<ObjType*, int, HashFn> >(
+    measure_map< EasyUseGoldHashMap<ObjType, int, HashFn>,
+                 EasyUseGoldHashMap<ObjType*, int, HashFn> >(
         "terark::gold_hash_map", obj_size, iters, stress_hash_function);
 #endif
 }
