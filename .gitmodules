@@ -1,0 +1,6 @@
+[submodule "deps/jstd"]
+	path = deps/jstd
+	url = https://github.com/shines77/jstd.git
+[submodule "deps/terark-base"]
+	path = deps/terark-base
+	url = https://github.com/Terark/terark-base.git
