@@ -7,7 +7,7 @@ AC_PREREQ(2.57)
 AC_INIT(sparsehash, 2.0.2, google-sparsehash@googlegroups.com)
 # The argument here is just something that should be in the current directory
 # (for sanity checking)
-AC_CONFIG_SRCDIR(README)
+AC_CONFIG_SRCDIR(README.md)
 AM_INIT_AUTOMAKE([dist-zip])
 AM_CONFIG_HEADER(src/config.h)
 

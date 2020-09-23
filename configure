@@ -565,7 +565,7 @@ PACKAGE_STRING='sparsehash 2.0.2'
 PACKAGE_BUGREPORT='google-sparsehash@googlegroups.com'
 PACKAGE_URL=''
 
-ac_unique_file="README"
+ac_unique_file="README.md"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
