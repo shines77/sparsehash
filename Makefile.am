@@ -4,7 +4,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # This is so we can #include <sparsehash/foo>
-AM_CPPFLAGS = -I$(top_srcdir)/src
+AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/deps/jstd/src/main -I$(top_builddir)/deps/terark-base/src
 
 # These are good warnings to turn on by default
 if GCC

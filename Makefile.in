@@ -305,10 +305,10 @@ top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
 
 # This is so we can #include <sparsehash/foo>
-AM_CPPFLAGS = -I$(top_srcdir)/src
+AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/deps/jstd/src/main -I$(top_builddir)/deps/terark-base/src
 
 # These are good warnings to turn on by default
-@GCC_TRUE@AM_CXXFLAGS = -Wall -W -Wwrite-strings -Woverloaded-virtual -Wshadow
+@GCC_TRUE@AM_CXXFLAGS = -march=native -Wall -W -Wwrite-strings -Woverloaded-virtual -Wno-shadow
 dist_doc_DATA = AUTHORS COPYING ChangeLog INSTALL NEWS README.md README_windows.txt \
    TODO \
    doc/dense_hash_map.html			\
