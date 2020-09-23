@@ -145,7 +145,8 @@ nodist_type_traits_unittest_OBJECTS = $(am__objects_1)
 type_traits_unittest_OBJECTS = $(am_type_traits_unittest_OBJECTS) \
 	$(nodist_type_traits_unittest_OBJECTS)
 type_traits_unittest_LDADD = $(LDADD)
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
+TIME_HAH_MAP_INCLUDES = -I$(top_builddir)/deps/jstd/src/main -I$(top_builddir)/deps/terark-base/src
+DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src $(TIME_HAH_MAP_INCLUDES)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
