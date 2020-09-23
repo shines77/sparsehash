@@ -43,7 +43,7 @@ TESTS = template_util_unittest$(EXEEXT) type_traits_unittest$(EXEEXT) \
 	simple_test$(EXEEXT) simple_compat_test$(EXEEXT)
 noinst_PROGRAMS = $(am__EXEEXT_1) time_hash_map$(EXEEXT)
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(dist_doc_DATA) \
+DIST_COMMON = README.md $(am__configure_deps) $(dist_doc_DATA) \
 	$(googleinclude_HEADERS) $(googleinternalinclude_HEADERS) \
 	$(internalinclude_HEADERS) $(sparsehashinclude_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
@@ -308,7 +308,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 
 # These are good warnings to turn on by default
 @GCC_TRUE@AM_CXXFLAGS = -Wall -W -Wwrite-strings -Woverloaded-virtual -Wshadow
-dist_doc_DATA = AUTHORS COPYING ChangeLog INSTALL NEWS README README_windows.txt \
+dist_doc_DATA = AUTHORS COPYING ChangeLog INSTALL NEWS README.md README_windows.txt \
    TODO \
    doc/dense_hash_map.html			\
    doc/dense_hash_set.html			\
