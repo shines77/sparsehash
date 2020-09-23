@@ -8,7 +8,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 
 # These are good warnings to turn on by default
 if GCC
-AM_CXXFLAGS = -Wall -W -Wwrite-strings -Woverloaded-virtual -Wshadow
+AM_CXXFLAGS = -march=native -Wall -W -Wwrite-strings -Woverloaded-virtual -Wno-shadow
 endif
 
 docdir = $(prefix)/share/doc/$(PACKAGE)-$(VERSION)
