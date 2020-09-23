@@ -30,7 +30,7 @@ dist_doc_DATA = AUTHORS COPYING ChangeLog INSTALL NEWS README.md README_windows.
 ## The libraries (.so's) you want to install
 lib_LTLIBRARIES =
 ## The location of the windows project file for each binary we make
-WINDOWS_PROJECTS = sparsehash.sln
+WINDOWS_PROJECTS = sparsehash-vc2015.sln
 
 ## unittests you want to run when people type 'make check'.
 ## TESTS is for binary unittests, check_SCRIPTS for script-based unittests.
@@ -43,7 +43,7 @@ TESTS_ENVIRONMENT =
 ## This should always include $(TESTS), but may also include other
 ## binaries that you compile but don't want automatically installed.
 noinst_PROGRAMS = $(TESTS) time_hash_map
-WINDOWS_PROJECTS += vsprojects/time_hash_map/time_hash_map.vcproj
+WINDOWS_PROJECTS += vsprojects/vc2015/time_hash_map/time_hash_map.vcproj
 
 
 ## vvvv RULES TO MAKE THE LIBRARIES, BINARIES, AND UNITTESTS
@@ -121,14 +121,14 @@ googleinternalinclude_HEADERS=		\
 
 TESTS += template_util_unittest
 # TODO(csilvers): Update windows projects for template_util_unittest.
-# WINDOWS_PROJECTS += vsprojects/template_util_unittest/template_util_unittest.vcproj
+# WINDOWS_PROJECTS += vsprojects/vc2015/template_util_unittest/template_util_unittest.vcproj
 template_util_unittest_SOURCES =			\
    src/template_util_unittest.cc		\
    src/sparsehash/template_util.h
 nodist_template_util_unittest_SOURCES = $(nodist_internalinclude_HEADERS)
 
 TESTS += type_traits_unittest
-WINDOWS_PROJECTS += vsprojects/type_traits_unittest/type_traits_unittest.vcproj
+WINDOWS_PROJECTS += vsprojects/vc2015/type_traits_unittest/type_traits_unittest.vcproj
 type_traits_unittest_SOURCES =			\
    src/type_traits_unittest.cc			\
    $(internalinclude_HEADERS)			\
@@ -136,7 +136,7 @@ type_traits_unittest_SOURCES =			\
 nodist_type_traits_unittest_SOURCES = $(nodist_internalinclude_HEADERS)
 
 TESTS += libc_allocator_with_realloc_test
-WINDOWS_PROJECTS += vsprojects/libc_allocator_with_realloc_test/libc_allocator_with_realloc_test.vcproj
+WINDOWS_PROJECTS += vsprojects/vc2015/libc_allocator_with_realloc_test/libc_allocator_with_realloc_test.vcproj
 libc_allocator_with_realloc_test_SOURCES =	\
    src/libc_allocator_with_realloc_test.cc	\
    $(internalinclude_HEADERS)			\
@@ -144,7 +144,7 @@ libc_allocator_with_realloc_test_SOURCES =	\
 
 
 TESTS += sparsetable_unittest
-WINDOWS_PROJECTS += vsprojects/sparsetable_unittest/sparsetable_unittest.vcproj
+WINDOWS_PROJECTS += vsprojects/vc2015/sparsetable_unittest/sparsetable_unittest.vcproj
 sparsetable_unittest_SOURCES =			\
    src/sparsetable_unittest.cc			\
    $(internalinclude_HEADERS)			\
@@ -152,7 +152,7 @@ sparsetable_unittest_SOURCES =			\
 nodist_sparsetable_unittest_SOURCES = $(nodist_internalinclude_HEADERS)
 
 TESTS += hashtable_test
-WINDOWS_PROJECTS += vsprojects/hashtable_test/hashtable_test.vcproj
+WINDOWS_PROJECTS += vsprojects/vc2015/hashtable_test/hashtable_test.vcproj
 hashtable_test_SOURCES =			\
    src/hashtable_test.cc			\
    src/hash_test_interface.h			\
@@ -162,7 +162,7 @@ hashtable_test_SOURCES =			\
 nodist_hashtable_test_SOURCES = $(nodist_internalinclude_HEADERS)
 
 TESTS += simple_test
-WINDOWS_PROJECTS += vsprojects/simple_test/simple_test.vcproj
+WINDOWS_PROJECTS += vsprojects/vc2015/simple_test/simple_test.vcproj
 simple_test_SOURCES =	   		        \
    src/simple_test.cc				\
    $(internalinclude_HEADERS)
@@ -222,8 +222,8 @@ lib${PACKAGE}.pc: Makefile packages/rpm/rpm.spec
 
 # Windows wants write permission to .vcproj files and maybe even sln files.
 dist-hook:
-	test -e "$(distdir)/vsprojects" \
-	   && chmod -R u+w $(distdir)/*.sln $(distdir)/vsprojects/
+	test -e "$(distdir)/vsprojects/vc2015/" \
+	   && chmod -R u+w $(distdir)/*.sln $(distdir)/vsprojects/vc2015/
 
 EXTRA_DIST = packages/rpm.sh packages/rpm/rpm.spec packages/deb.sh packages/deb \
              src/config.h.include src/windows $(WINDOWS_PROJECTS) experimental

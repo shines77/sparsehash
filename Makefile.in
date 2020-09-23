@@ -321,13 +321,13 @@ dist_doc_DATA = AUTHORS COPYING ChangeLog INSTALL NEWS README.md README_windows.
    doc/designstyle.css
 
 lib_LTLIBRARIES = 
-WINDOWS_PROJECTS = sparsehash.sln \
-	vsprojects/time_hash_map/time_hash_map.vcproj \
-	vsprojects/type_traits_unittest/type_traits_unittest.vcproj \
-	vsprojects/libc_allocator_with_realloc_test/libc_allocator_with_realloc_test.vcproj \
-	vsprojects/sparsetable_unittest/sparsetable_unittest.vcproj \
-	vsprojects/hashtable_test/hashtable_test.vcproj \
-	vsprojects/simple_test/simple_test.vcproj
+WINDOWS_PROJECTS = sparsehash-vc2015.sln \
+	vsprojects/vc2015/time_hash_map/time_hash_map.vcproj \
+	vsprojects/vc2015/type_traits_unittest/type_traits_unittest.vcproj \
+	vsprojects/vc2015/libc_allocator_with_realloc_test/libc_allocator_with_realloc_test.vcproj \
+	vsprojects/vc2015/sparsetable_unittest/sparsetable_unittest.vcproj \
+	vsprojects/vc2015/hashtable_test/hashtable_test.vcproj \
+	vsprojects/vc2015/simple_test/simple_test.vcproj
 check_SCRIPTS = 
 TESTS_ENVIRONMENT = 
 # This is how we tell automake about auto-generated .h files
@@ -1328,8 +1328,8 @@ lib${PACKAGE}.pc: Makefile packages/rpm/rpm.spec
 
 # Windows wants write permission to .vcproj files and maybe even sln files.
 dist-hook:
-	test -e "$(distdir)/vsprojects" \
-	   && chmod -R u+w $(distdir)/*.sln $(distdir)/vsprojects/
+	test -e "$(distdir)/vsprojects/vc2015/" \
+	   && chmod -R u+w $(distdir)/*.sln $(distdir)/vsprojects/vc2015/
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
