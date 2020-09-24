@@ -77,6 +77,11 @@ extern "C" {
 #endif      // for uname()
 }
 
+#if defined HAVE_WINDOWS_H
+#pragma comment(lib, "winmm.lib")
+#include <mmsystem.h>
+#endif
+
 #define HAVE_JSTD_HASH_MAP      1
 #define HAVE_GOLD_HASH_MAP      1
 
@@ -137,8 +142,6 @@ extern "C" {
 #include <terark/gold_hash_map.hpp>
 #endif
 
-#define USE_FAST_HASH_FUNCTION      1
-
 using std::map;
 using std::swap;
 using std::vector;
@@ -167,6 +170,8 @@ using std::unordered_map;
 #elif defined(HAVE_HASH_MAP) || defined(_MSC_VER)
 using HASH_NAMESPACE::hash_map;
 #endif
+
+#define USE_FAST_HASH_FUNCTION      1
 
 #ifdef USE_FAST_HASH_FUNCTION
 #undef  SPARSEHASH_HASH
@@ -448,7 +453,7 @@ class Rusage {
 #if defined HAVE_SYS_RESOURCE_H
   struct rusage start;
 #elif defined HAVE_WINDOWS_H
-  long long int start;
+  DWORD start;
 #else
   time_t start_time_t;
 #endif
@@ -460,7 +465,8 @@ inline void Rusage::Reset() {
 #if defined HAVE_SYS_RESOURCE_H
   getrusage(RUSAGE_SELF, &start);
 #elif defined HAVE_WINDOWS_H
-  start = GetTickCount();
+  //start = ::GetTickCount();
+  start = ::timeGetTime();
 #else
   time(&start_time_t);
 #endif
@@ -478,7 +484,8 @@ inline double Rusage::UserTime() {
 
   return double(result.tv_sec) + double(result.tv_usec) / 1000000.0;
 #elif defined HAVE_WINDOWS_H
-  return double(GetTickCount() - start) / 1000.0;
+  //return double(::GetTickCount() - start) / 1000.0;
+  return double(::timeGetTime() - start) / 1000.0;
 #else
   time_t now;
   time(&now);
@@ -721,7 +728,7 @@ static void time_map_iterate(uint32_t iters) {
   for (typename MapType::const_iterator it = set.begin(), it_end = set.end();
        it != it_end;
        ++it) {
-    r ^= it->second;
+    r ^= static_cast<uint32_t>(it->second);
   }
 
   double ut = t.UserTime();
