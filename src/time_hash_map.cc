@@ -137,6 +137,8 @@ extern "C" {
 #include <terark/gold_hash_map.hpp>
 #endif
 
+#define USE_FAST_HASH_FUNCTION      1
+
 using std::map;
 using std::swap;
 using std::vector;
@@ -164,6 +166,11 @@ using std::unordered_map;
 #endif
 #elif defined(HAVE_HASH_MAP) || defined(_MSC_VER)
 using HASH_NAMESPACE::hash_map;
+#endif
+
+#ifdef USE_FAST_HASH_FUNCTION
+#undef  SPARSEHASH_HASH
+#define SPARSEHASH_HASH     test::hash
 #endif
 
 static const int kDefaultIters = 10000000;
@@ -252,6 +259,21 @@ class EasyUseGoldHashMap : public terark::gold_hash_map<K,V,H> {
 };
 #endif
 
+//std::hash<int>();
+
+namespace test {
+
+template <typename Key>
+struct hash {
+    hash() {}
+    ~hash() {}
+
+    size_t operator () (const Key & key) const {
+        return static_cast<size_t>(key);
+    }
+};
+
+} // namespace test
 
 // Returns the number of hashes that have been done since the last
 // call to NumHashesSinceLastCall().  This is shared across all
@@ -278,11 +300,11 @@ int NumCopiesSinceLastCall() {
  * (must be > sizeof(int).  Hashsize is how many of these bytes we
  * use when hashing (must be > sizeof(int) and < Size).
  */
-template<int Size, int Hashsize> class HashObject {
+template<size_t Size, size_t Hashsize> class HashObject {
  public:
   typedef HashObject<Size, Hashsize> class_type;
   HashObject() {}
-  HashObject(int i) : i_(i) {
+  HashObject(size_t i) : i_(i) {
     memset(buffer_, i & 255, sizeof(buffer_));   // a "random" char
   }
   HashObject(const HashObject& that) {
@@ -296,11 +318,11 @@ template<int Size, int Hashsize> class HashObject {
 
   size_t Hash() const {
     g_num_hashes++;
-    int hashval = i_;
+    size_t hashval = i_;
     for (size_t i = 0; i < Hashsize - sizeof(i_); ++i) {
       hashval += buffer_[i];
     }
-    return SPARSEHASH_HASH<int>()(hashval);
+    return SPARSEHASH_HASH<size_t>()(hashval);
   }
 
   bool operator==(const class_type& that) const { return this->i_ == that.i_; }
@@ -308,16 +330,16 @@ template<int Size, int Hashsize> class HashObject {
   bool operator<=(const class_type& that) const { return this->i_ <= that.i_; }
 
  private:
-  int i_;        // the key used for hashing
+  size_t i_;        // the key used for hashing
   char buffer_[Size - sizeof(int)];
 };
 
 // A specialization for the case sizeof(buffer_) == 0
-template<> class HashObject<sizeof(int), sizeof(int)> {
+template<> class HashObject<sizeof(uint32_t), sizeof(uint32_t)> {
  public:
-  typedef HashObject<sizeof(int), sizeof(int)> class_type;
+  typedef HashObject<sizeof(uint32_t), sizeof(uint32_t)> class_type;
   HashObject() {}
-  HashObject(int i) : i_(i) {}
+  HashObject(uint32_t i) : i_(i) {}
   HashObject(const HashObject& that) {
     operator=(that);
   }
@@ -328,7 +350,7 @@ template<> class HashObject<sizeof(int), sizeof(int)> {
 
   size_t Hash() const {
     g_num_hashes++;
-    return SPARSEHASH_HASH<int>()(i_);
+    return SPARSEHASH_HASH<uint32_t>()(i_);
   }
 
   bool operator==(const class_type& that) const { return this->i_ == that.i_; }
@@ -336,7 +358,34 @@ template<> class HashObject<sizeof(int), sizeof(int)> {
   bool operator<=(const class_type& that) const { return this->i_ <= that.i_; }
 
  private:
-  int i_;        // the key used for hashing
+  uint32_t i_;        // the key used for hashing
+};
+
+// A specialization for the case sizeof(buffer_) == 0
+template<> class HashObject<sizeof(size_t), sizeof(size_t)> {
+ public:
+  typedef HashObject<sizeof(size_t), sizeof(size_t)> class_type;
+  HashObject() {}
+  HashObject(size_t i) : i_(i) {}
+  HashObject(const HashObject& that) {
+    operator=(that);
+  }
+  void operator=(const HashObject& that) {
+    g_num_copies++;
+    this->i_ = that.i_;
+  }
+
+  size_t Hash() const {
+    g_num_hashes++;
+    return SPARSEHASH_HASH<size_t>()(i_);
+  }
+
+  bool operator==(const class_type& that) const { return this->i_ == that.i_; }
+  bool operator< (const class_type& that) const { return this->i_ < that.i_; }
+  bool operator<=(const class_type& that) const { return this->i_ <= that.i_; }
+
+ private:
+  size_t i_;        // the key used for hashing
 };
 
 _START_GOOGLE_NAMESPACE_
@@ -344,33 +393,33 @@ _START_GOOGLE_NAMESPACE_
 // Let the hashtable implementations know it can use an optimized memcpy,
 // because the compiler defines both the destructor and copy constructor.
 
-template<int Size, int Hashsize>
+template<size_t Size, size_t Hashsize>
 struct has_trivial_copy< HashObject<Size, Hashsize> > : true_type { };
 
-template<int Size, int Hashsize>
+template<size_t Size, size_t Hashsize>
 struct has_trivial_destructor< HashObject<Size, Hashsize> > : true_type { };
 
 _END_GOOGLE_NAMESPACE_
 
 class HashFn {
  public:
-  template<int Size, int Hashsize>
+  template<size_t Size, size_t Hashsize>
   size_t operator()(const HashObject<Size,Hashsize>& obj) const {
     return obj.Hash();
   }
   // Do the identity hash for pointers.
-  template<int Size, int Hashsize>
+  template<size_t Size, size_t Hashsize>
   size_t operator()(const HashObject<Size,Hashsize>* obj) const {
     return reinterpret_cast<uintptr_t>(obj);
   }
 
   // Less operator for MSVC's hash containers.
-  template<int Size, int Hashsize>
+  template<size_t Size, size_t Hashsize>
   bool operator()(const HashObject<Size,Hashsize>& a,
                   const HashObject<Size,Hashsize>& b) const {
     return a < b;
   }
-  template<int Size, int Hashsize>
+  template<size_t Size, size_t Hashsize>
   bool operator()(const HashObject<Size,Hashsize>* a,
                   const HashObject<Size,Hashsize>* b) const {
     return a < b;
@@ -448,12 +497,12 @@ static void print_uname() {
 }
 
 // Generate stamp for this run
-static void stamp_run(int iters) {
+static void stamp_run(uint32_t iters) {
   time_t now = time(0);
   printf("======\n");
   fflush(stdout);
   print_uname();
-  printf("Average over %d iterations\n", iters);
+  printf("Average over %u iterations\n", iters);
   fflush(stdout);
   // don't need asctime_r/gmtime_r: we're not threaded
   printf("Current time (GMT): %s", asctime(gmtime(&now)));
@@ -484,7 +533,7 @@ static size_t CurrentMemoryUsage() { return 0; }
 #endif
 
 static void report(char const* title, double t,
-                   int iters,
+                   uint32_t iters,
                    size_t start_memory, size_t end_memory) {
   // Construct heap growth report text if applicable
   char heap[100] = "";
@@ -501,13 +550,13 @@ static void report(char const* title, double t,
 }
 
 template<class MapType>
-static void time_map_grow(int iters) {
+static void time_map_grow(uint32_t iters) {
   MapType set;
   Rusage t;
 
   const size_t start = CurrentMemoryUsage();
   t.Reset();
-  for (int i = 0; i < iters; i++) {
+  for (uint32_t i = 0; i < iters; i++) {
     set[i] = i+1;
   }
   double ut = t.UserTime();
@@ -516,14 +565,14 @@ static void time_map_grow(int iters) {
 }
 
 template<class MapType>
-static void time_map_grow_predicted(int iters) {
+static void time_map_grow_predicted(uint32_t iters) {
   MapType set;
   Rusage t;
 
   const size_t start = CurrentMemoryUsage();
   set.resize(iters);
   t.Reset();
-  for (int i = 0; i < iters; i++) {
+  for (uint32_t i = 0; i < iters; i++) {
     set[i] = i+1;
   }
   double ut = t.UserTime();
@@ -532,10 +581,10 @@ static void time_map_grow_predicted(int iters) {
 }
 
 template<class MapType>
-static void time_map_replace(int iters) {
+static void time_map_replace(uint32_t iters) {
   MapType set;
   Rusage t;
-  int i;
+  uint32_t i;
 
   for (i = 0; i < iters; i++) {
     set[i] = i+1;
@@ -551,12 +600,12 @@ static void time_map_replace(int iters) {
 }
 
 template<class MapType>
-static void time_map_fetch(int iters, const vector<int>& indices,
+static void time_map_fetch(uint32_t iters, const vector<uint32_t>& indices,
                            char const* title) {
   MapType set;
   Rusage t;
-  int r;
-  int i;
+  uint32_t r;
+  uint32_t i;
 
   for (i = 0; i < iters; i++) {
     set[i] = i+1;
@@ -574,16 +623,16 @@ static void time_map_fetch(int iters, const vector<int>& indices,
 }
 
 template<class MapType>
-static void time_map_fetch_sequential(int iters) {
-  vector<int> v(iters);
-  for (int i = 0; i < iters; i++) {
+static void time_map_fetch_sequential(uint32_t iters) {
+  vector<uint32_t> v(iters);
+  for (uint32_t i = 0; i < iters; i++) {
     v[i] = i;
   }
   time_map_fetch<MapType>(iters, v, "map_fetch_sequential");
 }
 
 // Apply a pseudorandom permutation to the given vector.
-static void shuffle(vector<int>* v) {
+static void shuffle(vector<uint32_t>* v) {
   srand(9);
   for (size_t n = v->size(); n >= 2; n--) {
     swap((*v)[n - 1], (*v)[static_cast<unsigned>(rand()) % n]);
@@ -591,9 +640,9 @@ static void shuffle(vector<int>* v) {
 }
 
 template<class MapType>
-static void time_map_fetch_random(int iters) {
-  vector<int> v(iters);
-  for (int i = 0; i < iters; i++) {
+static void time_map_fetch_random(uint32_t iters) {
+  vector<uint32_t> v(iters);
+  for (uint32_t i = 0; i < iters; i++) {
     v[i] = i;
   }
   shuffle(&v);
@@ -601,16 +650,16 @@ static void time_map_fetch_random(int iters) {
 }
 
 template<class MapType>
-static void time_map_fetch_empty(int iters) {
+static void time_map_fetch_empty(uint32_t iters) {
   MapType set;
   Rusage t;
-  int r;
-  int i;
+  uint32_t r;
+  uint32_t i;
 
   r = 1;
   t.Reset();
   for (i = 0; i < iters; i++) {
-    r ^= static_cast<int>(set.find(i) != set.end());
+    r ^= static_cast<uint32_t>(set.find(i) != set.end());
   }
   double ut = t.UserTime();
 
@@ -619,10 +668,10 @@ static void time_map_fetch_empty(int iters) {
 }
 
 template<class MapType>
-static void time_map_remove(int iters) {
+static void time_map_remove(uint32_t iters) {
   MapType set;
   Rusage t;
-  int i;
+  uint32_t i;
 
   for (i = 0; i < iters; i++) {
     set[i] = i+1;
@@ -638,10 +687,10 @@ static void time_map_remove(int iters) {
 }
 
 template<class MapType>
-static void time_map_toggle(int iters) {
+static void time_map_toggle(uint32_t iters) {
   MapType set;
   Rusage t;
-  int i;
+  uint32_t i;
 
   const size_t start = CurrentMemoryUsage();
   t.Reset();
@@ -657,11 +706,11 @@ static void time_map_toggle(int iters) {
 }
 
 template<class MapType>
-static void time_map_iterate(int iters) {
+static void time_map_iterate(uint32_t iters) {
   MapType set;
   Rusage t;
-  int r;
-  int i;
+  uint32_t r;
+  uint32_t i;
 
   for (i = 0; i < iters; i++) {
     set[i] = i+1;
@@ -682,30 +731,30 @@ static void time_map_iterate(int iters) {
 }
 
 template<class MapType>
-static void stresshashfunction(int desired_insertions,
-                               int map_size,
-                               int stride) {
+static void stresshashfunction(uint32_t desired_insertions,
+                               uint32_t map_size,
+                               uint32_t stride) {
   Rusage t;
-  int num_insertions = 0;
+  uint32_t num_insertions = 0;
   // One measurement of user time (in seconds) is done for each iteration of
   // the outer loop.  The times are summed.
   double total_seconds = 0;
-  const int k = desired_insertions / map_size;
+  const uint32_t k = desired_insertions / map_size;
   MapType set;
-  for (int o = 0; o < k; o++) {
+  for (uint32_t o = 0; o < k; o++) {
     set.clear();
     set.resize(map_size);
     t.Reset();
-    const int maxint = (1ull << (sizeof(int) * 8 - 1)) - 1;
+    const uint32_t maxint = (1ull << (sizeof(uint32_t) * 8 - 1)) - 1;
     // Use n arithmetic sequences.  Using just one may lead to overflow
     // if stride * map_size > maxint.  Compute n by requiring
     // stride * map_size/n < maxint, i.e., map_size/(maxint/stride) < n
     char* key;   // something we can do math on
-    const int n = map_size / (maxint / stride) + 1;
-    for (int i = 0; i < n; i++) {
+    const uint32_t n = map_size / (maxint / stride) + 1;
+    for (uint32_t i = 0; i < n; i++) {
       key = NULL;
       key += i;
-      for (int j = 0; j < map_size/n; j++) {
+      for (uint32_t j = 0; j < map_size/n; j++) {
         key += stride;
         set[reinterpret_cast<typename MapType::key_type>(key)]
             = ++num_insertions;
@@ -722,17 +771,17 @@ static void stresshashfunction(int desired_insertions,
 
 template<class MapType>
 static void stresshashfunction(int num_inserts) {
-  static const int kMapSizes[] = {256, 1024};
+  static const uint32_t kMapSizes[] = {256, 1024};
   for (unsigned i = 0; i < sizeof(kMapSizes) / sizeof(kMapSizes[0]); i++) {
-    const int map_size = kMapSizes[i];
-    for (int stride = 1; stride <= map_size; stride *= map_size) {
+    const uint32_t map_size = kMapSizes[i];
+    for (uint32_t stride = 1; stride <= map_size; stride *= map_size) {
       stresshashfunction<MapType>(num_inserts, map_size, stride);
     }
   }
 }
 
 template<class MapType, class StressMapType>
-static void measure_map(const char* label, int obj_size, int iters,
+static void measure_map(const char* label, uint32_t obj_size, uint32_t iters,
                         bool stress_hash_function) {
   printf("\n%s (%d byte objects, %d iterations):\n", label, obj_size, iters);
   if (1) time_map_grow<MapType>(iters);
@@ -755,49 +804,49 @@ static void measure_map(const char* label, int obj_size, int iters,
 }
 
 template<class ObjType>
-static void test_all_maps(int obj_size, int iters) {
+static void test_all_maps(uint32_t obj_size, uint32_t iters) {
   const bool stress_hash_function = obj_size <= 8;
 
   if (FLAGS_test_map)
-    measure_map< EasyUseMap<ObjType, int>,
-                 EasyUseMap<ObjType*, int> >(
+    measure_map< EasyUseMap<ObjType, size_t>,
+                 EasyUseMap<ObjType*, size_t> >(
         "STANDARD MAP", obj_size, iters, false);
 
   if (FLAGS_test_hash_map)
-    measure_map< EasyUseHashMap<ObjType, int, HashFn>,
-                 EasyUseHashMap<ObjType*, int, HashFn> >(
+    measure_map< EasyUseHashMap<ObjType, size_t, HashFn>,
+                 EasyUseHashMap<ObjType*, size_t, HashFn> >(
         "STANDARD HASH_MAP", obj_size, iters, stress_hash_function);
 
   if (FLAGS_test_sparse_hash_map)
-    measure_map< EasyUseSparseHashMap<ObjType, int, HashFn>,
-                 EasyUseSparseHashMap<ObjType*, int, HashFn> >(
+    measure_map< EasyUseSparseHashMap<ObjType, size_t, HashFn>,
+                 EasyUseSparseHashMap<ObjType*, size_t, HashFn> >(
         "SPARSE_HASH_MAP", obj_size, iters, stress_hash_function);
 
   if (FLAGS_test_dense_hash_map)
-    measure_map< EasyUseDenseHashMap<ObjType, int, HashFn>,
-                 EasyUseDenseHashMap<ObjType*, int, HashFn> >(
+    measure_map< EasyUseDenseHashMap<ObjType, size_t, HashFn>,
+                 EasyUseDenseHashMap<ObjType*, size_t, HashFn> >(
         "DENSE_HASH_MAP", obj_size, iters, stress_hash_function);
 
 #ifdef HAVE_JSTD_HASH_MAP
   if (FLAGS_test_jstd_hash_map)
-    measure_map< EasyUseJStdHashMap<ObjType, int, HashFn>,
-                 EasyUseJStdHashMap<ObjType*, int, HashFn> >(
+    measure_map< EasyUseJStdHashMap<ObjType, size_t, HashFn>,
+                 EasyUseJStdHashMap<ObjType*, size_t, HashFn> >(
         "jstd::Dictionary", obj_size, iters, stress_hash_function);
 #endif
 
 #ifdef HAVE_GOLD_HASH_MAP
   if (FLAGS_test_gold_hash_map)
-    measure_map< EasyUseGoldHashMap<ObjType, int, HashFn>,
-                 EasyUseGoldHashMap<ObjType*, int, HashFn> >(
+    measure_map< EasyUseGoldHashMap<ObjType, size_t, HashFn>,
+                 EasyUseGoldHashMap<ObjType*, size_t, HashFn> >(
         "terark::gold_hash_map", obj_size, iters, stress_hash_function);
 #endif
 }
 
 int main(int argc, char** argv) {
 
-  int iters = kDefaultIters;
+  size_t iters = kDefaultIters;
   if (argc > 1) {            // first arg is # of iterations
-    iters = atoi(argv[1]);
+    iters = (size_t)atoi(argv[1]);
   }
 
   stamp_run(iters);
