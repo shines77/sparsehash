@@ -171,9 +171,9 @@ using std::unordered_map;
 using HASH_NAMESPACE::hash_map;
 #endif
 
-#define USE_FAST_HASH_FUNCTION      1
+#define USE_FAST_SIMPLE_HASH      0
 
-#ifdef USE_FAST_HASH_FUNCTION
+#ifdef USE_FAST_SIMPLE_HASH
 #undef  SPARSEHASH_HASH
 #define SPARSEHASH_HASH     test::hash
 #endif
@@ -308,7 +308,9 @@ int NumCopiesSinceLastCall() {
 template<size_t Size, size_t Hashsize> class HashObject {
  public:
   typedef HashObject<Size, Hashsize> class_type;
-  HashObject() {}
+  HashObject() : i_(0) {
+    memset(buffer_, 0, sizeof(buffer_));
+  }
   HashObject(size_t i) : i_(i) {
     memset(buffer_, i & 255, sizeof(buffer_));   // a "random" char
   }
@@ -336,14 +338,14 @@ template<size_t Size, size_t Hashsize> class HashObject {
 
  private:
   size_t i_;        // the key used for hashing
-  char buffer_[Size - sizeof(int)];
+  char buffer_[Size - sizeof(size_t)];
 };
 
 // A specialization for the case sizeof(buffer_) == 0
 template<> class HashObject<sizeof(uint32_t), sizeof(uint32_t)> {
  public:
   typedef HashObject<sizeof(uint32_t), sizeof(uint32_t)> class_type;
-  HashObject() {}
+  HashObject() : i_(0) {}
   HashObject(uint32_t i) : i_(i) {}
   HashObject(const HashObject& that) {
     operator=(that);
@@ -366,11 +368,14 @@ template<> class HashObject<sizeof(uint32_t), sizeof(uint32_t)> {
   uint32_t i_;        // the key used for hashing
 };
 
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(__amd64__) || defined(__x86_64__) || defined(__LP64__)
+
 // A specialization for the case sizeof(buffer_) == 0
 template<> class HashObject<sizeof(size_t), sizeof(size_t)> {
  public:
   typedef HashObject<sizeof(size_t), sizeof(size_t)> class_type;
-  HashObject() {}
+  HashObject() : i_(0) {}
   HashObject(size_t i) : i_(i) {}
   HashObject(const HashObject& that) {
     operator=(that);
@@ -392,6 +397,8 @@ template<> class HashObject<sizeof(size_t), sizeof(size_t)> {
  private:
   size_t i_;        // the key used for hashing
 };
+
+#endif // __amd64__
 
 _START_GOOGLE_NAMESPACE_
 
