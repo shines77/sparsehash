@@ -56,6 +56,10 @@
 
 #define NOMINMAX
 
+#ifndef __SSE4_2__
+#define __SSE4_2__              1
+#endif
+
 #include <sparsehash/internal/sparseconfig.h>
 #include <config.h>
 #ifdef HAVE_INTTYPES_H
@@ -97,10 +101,6 @@ extern "C" {
 #include <sparsehash/sparse_hash_map>
 
 #ifdef HAVE_JSTD_HASH_MAP
-
-#ifndef __SSE4_2__
-#define __SSE4_2__              1
-#endif
 
 /* SIMD support features */
 #define JSTD_HAVE_MMX           1
@@ -179,6 +179,17 @@ using HASH_NAMESPACE::hash_map;
 #endif
 
 static const int kDefaultIters = 10000000;
+
+namespace test {
+
+template <typename Key>
+struct hash {
+    size_t operator () (const Key & key) const {
+        return static_cast<size_t>(key);
+    }
+};
+
+} // namespace test
 
 // A version of each of the hashtable classes we test, that has been
 // augumented to provide a common interface.  For instance, the
@@ -263,22 +274,6 @@ class EasyUseGoldHashMap : public terark::gold_hash_map<K,V,H> {
   void resize(size_t r) { this->rehash(r); }
 };
 #endif
-
-//std::hash<int>();
-
-namespace test {
-
-template <typename Key>
-struct hash {
-    hash() {}
-    ~hash() {}
-
-    size_t operator () (const Key & key) const {
-        return static_cast<size_t>(key);
-    }
-};
-
-} // namespace test
 
 // Returns the number of hashes that have been done since the last
 // call to NumHashesSinceLastCall().  This is shared across all
