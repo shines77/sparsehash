@@ -157,8 +157,8 @@ static bool FLAGS_test_hash_map = true;
 static bool FLAGS_test_sparse_hash_map = false;
 static bool FLAGS_test_dense_hash_map = true;
 
+static bool FLAGS_test_gold_hash_map = true;
 static bool FLAGS_test_jstd_hash_map = true;
-static bool FLAGS_test_gold_hash_map = false;
 
 static bool FLAGS_test_4_bytes = true;
 static bool FLAGS_test_8_bytes = true;
@@ -933,9 +933,9 @@ static void measure_map(const char* label, uint32_t obj_size, uint32_t iters,
   if (1) time_map_grow<MapType>(iters);
   if (1) time_map_grow_predicted<MapType>(iters);
   if (1) time_map_replace<MapType>(iters);
-  if (1) time_map_insert<MapType>(iters);
-  if (1) time_map_insert_predicted<MapType>(iters);
-  if (1) time_map_insert_replace<MapType>(iters);
+  if (0) time_map_insert<MapType>(iters);
+  if (0) time_map_insert_predicted<MapType>(iters);
+  if (0) time_map_insert_replace<MapType>(iters);
   if (1) time_map_fetch_random<MapType>(iters);
   if (1) time_map_fetch_sequential<MapType>(iters);
   if (1) time_map_fetch_empty<MapType>(iters);
