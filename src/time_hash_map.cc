@@ -60,6 +60,10 @@
 #define __SSE4_2__              1
 #endif
 
+#ifdef _MSC_VER
+#include <vld.h>
+#endif
+
 #include <sparsehash/internal/sparseconfig.h>
 #include <config.h>
 #ifdef HAVE_INTTYPES_H
@@ -148,7 +152,7 @@ using std::vector;
 using GOOGLE_NAMESPACE::dense_hash_map;
 using GOOGLE_NAMESPACE::sparse_hash_map;
 
-static bool FLAGS_test_map = true;
+static bool FLAGS_test_map = false;
 static bool FLAGS_test_hash_map = true;
 static bool FLAGS_test_sparse_hash_map = false;
 static bool FLAGS_test_dense_hash_map = true;
@@ -178,7 +182,11 @@ using HASH_NAMESPACE::hash_map;
 #define SPARSEHASH_HASH     test::hash
 #endif
 
+#ifdef NDEBUG
 static const int kDefaultIters = 10000000;
+#else
+static const int kDefaultIters = 100000;
+#endif
 
 namespace test {
 
@@ -869,9 +877,9 @@ static void time_map_iterate2(uint32_t iters) {
 }
 
 template<class MapType>
-static void stresshashfunction(uint32_t desired_insertions,
-                               uint32_t map_size,
-                               uint32_t stride) {
+static void stress_hash_function(uint32_t desired_insertions,
+                                 uint32_t map_size,
+                                 uint32_t stride) {
   Rusage t;
   uint32_t num_insertions = 0;
   // One measurement of user time (in seconds) is done for each iteration of
@@ -908,19 +916,19 @@ static void stresshashfunction(uint32_t desired_insertions,
 }
 
 template<class MapType>
-static void stresshashfunction(int num_inserts) {
+static void stress_hash_function(int num_inserts) {
   static const uint32_t kMapSizes[] = {256, 1024};
   for (unsigned i = 0; i < sizeof(kMapSizes) / sizeof(kMapSizes[0]); i++) {
     const uint32_t map_size = kMapSizes[i];
     for (uint32_t stride = 1; stride <= map_size; stride *= map_size) {
-      stresshashfunction<MapType>(num_inserts, map_size, stride);
+      stress_hash_function<MapType>(num_inserts, map_size, stride);
     }
   }
 }
 
 template<class MapType, class StressMapType>
 static void measure_map(const char* label, uint32_t obj_size, uint32_t iters,
-                        bool stress_hash_function) {
+                        bool is_stress_hash_function) {
   printf("\n%s (%d byte objects, %d iterations):\n", label, obj_size, iters);
   if (1) time_map_grow<MapType>(iters);
   if (1) time_map_grow_predicted<MapType>(iters);
@@ -938,17 +946,17 @@ static void measure_map(const char* label, uint32_t obj_size, uint32_t iters,
   if (1) time_map_iterate2<MapType>(iters);
   // This last test is useful only if the map type uses hashing.
   // And it's slow, so use fewer iterations.
-  if (stress_hash_function) {
+  if (is_stress_hash_function) {
     // Blank line in the output makes clear that what follows isn't part of the
     // table of results that we just printed.
     puts("");
-    stresshashfunction<StressMapType>(iters / 4);
+    stress_hash_function<StressMapType>(iters / 4);
   }
 }
 
 template<class ObjType>
 static void test_all_maps(uint32_t obj_size, uint32_t iters) {
-  const bool stress_hash_function = obj_size <= 8;
+  //const bool is_stress_hash_function = (obj_size <= 8);
 
   if (FLAGS_test_map)
     measure_map< EasyUseMap<ObjType, size_t>,
@@ -958,32 +966,30 @@ static void test_all_maps(uint32_t obj_size, uint32_t iters) {
   if (FLAGS_test_hash_map)
     measure_map< EasyUseHashMap<ObjType, size_t, HashFn>,
                  EasyUseHashMap<ObjType*, size_t, HashFn> >(
-        "STANDARD HASH_MAP", obj_size, iters, stress_hash_function);
+        "STANDARD HASH_MAP", obj_size, iters, false);
 
-#if 0
   if (FLAGS_test_sparse_hash_map)
     measure_map< EasyUseSparseHashMap<ObjType, size_t, HashFn>,
                  EasyUseSparseHashMap<ObjType*, size_t, HashFn> >(
-        "SPARSE_HASH_MAP", obj_size, iters, stress_hash_function);
-#endif
+        "SPARSE_HASH_MAP", obj_size, iters, false);
 
   if (FLAGS_test_dense_hash_map)
     measure_map< EasyUseDenseHashMap<ObjType, size_t, HashFn>,
                  EasyUseDenseHashMap<ObjType*, size_t, HashFn> >(
-        "DENSE_HASH_MAP", obj_size, iters, stress_hash_function);
-
-#ifdef HAVE_JSTD_HASH_MAP
-  if (FLAGS_test_jstd_hash_map)
-    measure_map< EasyUseJStdHashMap<ObjType, size_t, HashFn>,
-                 EasyUseJStdHashMap<ObjType*, size_t, HashFn> >(
-        "jstd::Dictionary", obj_size, iters, stress_hash_function);
-#endif
+        "DENSE_HASH_MAP", obj_size, iters, false);
 
 #ifdef HAVE_GOLD_HASH_MAP
   if (FLAGS_test_gold_hash_map)
     measure_map< EasyUseGoldHashMap<ObjType, size_t, HashFn>,
                  EasyUseGoldHashMap<ObjType*, size_t, HashFn> >(
-        "terark::gold_hash_map", obj_size, iters, stress_hash_function);
+        "terark::gold_hash_map", obj_size, iters, false);
+#endif
+
+#ifdef HAVE_JSTD_HASH_MAP
+  if (FLAGS_test_jstd_hash_map)
+    measure_map< EasyUseJStdHashMap<ObjType, size_t, HashFn>,
+                 EasyUseJStdHashMap<ObjType*, size_t, HashFn> >(
+        "jstd::Dictionary", obj_size, iters, false);
 #endif
 }
 
