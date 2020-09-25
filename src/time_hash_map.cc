@@ -941,9 +941,9 @@ static void measure_map(const char* label, uint32_t obj_size, uint32_t iters,
   if (1) time_map_fetch_empty<MapType>(iters);
   if (1) time_map_remove<MapType>(iters);
   if (1) time_map_toggle<MapType>(iters);
-  if (1) time_map_toggle2<MapType>(iters);
+  if (0) time_map_toggle2<MapType>(iters);
   if (1) time_map_iterate<MapType>(iters);
-  if (1) time_map_iterate2<MapType>(iters);
+  if (0) time_map_iterate2<MapType>(iters);
   // This last test is useful only if the map type uses hashing.
   // And it's slow, so use fewer iterations.
   if (is_stress_hash_function) {
