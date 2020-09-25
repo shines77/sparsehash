@@ -158,7 +158,7 @@ static bool FLAGS_test_sparse_hash_map = false;
 static bool FLAGS_test_dense_hash_map = true;
 
 static bool FLAGS_test_jstd_hash_map = true;
-static bool FLAGS_test_gold_hash_map = true;
+static bool FLAGS_test_gold_hash_map = false;
 
 static bool FLAGS_test_4_bytes = true;
 static bool FLAGS_test_8_bytes = true;
