@@ -395,6 +395,41 @@ template<> class HashObject<sizeof(size_t), sizeof(size_t)> {
 
 #endif // __amd64__
 
+namespace std {
+
+// Let the hashtable implementations know it can use an optimized memcpy,
+// because the compiler defines both the destructor and copy constructor.
+
+// is_trivially_copyable
+
+template <>
+struct is_trivially_copyable< HashObject<4, 4> > : true_type { };
+
+template <>
+struct is_trivially_copyable< HashObject<8, 8> > : true_type { };
+
+template <>
+struct is_trivially_copyable< HashObject<16, 16> > : true_type { };
+
+template <>
+struct is_trivially_copyable< HashObject<256, 32> > : true_type { };
+
+// is_trivially_destructible
+
+template <>
+struct is_trivially_destructible< HashObject<4, 4> > : true_type { };
+
+template <>
+struct is_trivially_destructible< HashObject<8, 8> > : true_type { };
+
+template <>
+struct is_trivially_destructible< HashObject<16, 16> > : true_type { };
+
+template <>
+struct is_trivially_destructible< HashObject<256, 32> > : true_type { };
+
+} // namespace std
+
 _START_GOOGLE_NAMESPACE_
 
 // Let the hashtable implementations know it can use an optimized memcpy,
