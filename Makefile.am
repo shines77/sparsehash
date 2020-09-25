@@ -8,7 +8,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/deps/jstd/src/main -I$(top_b
 
 # These are good warnings to turn on by default
 if GCC
-AM_CXXFLAGS = -march=native -Wall -W -Wwrite-strings -Woverloaded-virtual -Wno-shadow
+AM_CXXFLAGS = -O3 -DNDEBUG -march=native -Wall -W -Wwrite-strings -Woverloaded-virtual -Wno-shadow
 endif
 
 docdir = $(prefix)/share/doc/$(PACKAGE)-$(VERSION)
