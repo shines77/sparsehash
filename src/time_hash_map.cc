@@ -586,7 +586,7 @@ static void report(char const* title, double t,
              (end_memory - start_memory) / 1048576.0);
   }
 
-  printf("%-20s %6.1f ns  (%8d hashes, %8d copies)%s\n",
+  printf("%-22s %6.1f ns  (%8d hashes, %8d copies)%s\n",
          title, (t * 1000000000.0 / iters),
          NumHashesSinceLastCall(), NumCopiesSinceLastCall(),
          heap);
@@ -636,11 +636,61 @@ static void time_map_replace(uint32_t iters) {
 
   t.Reset();
   for (i = 0; i < iters; i++) {
-    set[i] = i+1;
+    set[i] = i+2;
   }
   double ut = t.UserTime();
 
   report("map_replace", ut, iters, 0, 0);
+}
+
+template<class MapType>
+static void time_map_insert(uint32_t iters) {
+  MapType set;
+  Rusage t;
+
+  const size_t start = CurrentMemoryUsage();
+  t.Reset();
+  for (uint32_t i = 0; i < iters; i++) {
+    set.insert(std::make_pair(i, i + 1));
+  }
+  double ut = t.UserTime();
+  const size_t finish = CurrentMemoryUsage();
+  report("map_insert", ut, iters, start, finish);
+}
+
+template<class MapType>
+static void time_map_insert_predicted(uint32_t iters) {
+  MapType set;
+  Rusage t;
+
+  const size_t start = CurrentMemoryUsage();
+  set.resize(iters);
+  t.Reset();
+  for (uint32_t i = 0; i < iters; i++) {
+    set.insert(std::make_pair(i, i + 1));
+  }
+  double ut = t.UserTime();
+  const size_t finish = CurrentMemoryUsage();
+  report("map_insert_predicted", ut, iters, start, finish);
+}
+
+template<class MapType>
+static void time_map_insert_replace(uint32_t iters) {
+  MapType set;
+  Rusage t;
+  uint32_t i;
+
+  for (i = 0; i < iters; i++) {
+    set.insert(std::make_pair(i, i + 1));
+  }
+
+  t.Reset();
+  for (i = 0; i < iters; i++) {
+    set.insert(std::make_pair(i, i + 2));
+  }
+  double ut = t.UserTime();
+
+  report("map_insert_replace", ut, iters, 0, 0);
 }
 
 template<class MapType>
@@ -750,6 +800,25 @@ static void time_map_toggle(uint32_t iters) {
 }
 
 template<class MapType>
+static void time_map_toggle2(uint32_t iters) {
+  MapType set;
+  Rusage t;
+  uint32_t i;
+
+  const size_t start = CurrentMemoryUsage();
+  t.Reset();
+  for (i = 0; i < iters; i++) {
+    set.insert(std::make_pair(i, i + 1));
+    set.erase(i);
+  }
+
+  double ut = t.UserTime();
+  const size_t finish = CurrentMemoryUsage();
+
+  report("map_toggle2", ut, iters, start, finish);
+}
+
+template<class MapType>
 static void time_map_iterate(uint32_t iters) {
   MapType set;
   Rusage t;
@@ -772,6 +841,31 @@ static void time_map_iterate(uint32_t iters) {
 
   srand(r);   // keep compiler from optimizing away r (we never call rand())
   report("map_iterate", ut, iters, 0, 0);
+}
+
+template<class MapType>
+static void time_map_iterate2(uint32_t iters) {
+  MapType set;
+  Rusage t;
+  uint32_t r;
+  uint32_t i;
+
+  for (i = 0; i < iters; i++) {
+    set.insert(std::make_pair(i, i + 1));
+  }
+
+  r = 1;
+  t.Reset();
+  for (typename MapType::const_iterator it = set.begin(), it_end = set.end();
+       it != it_end;
+       ++it) {
+    r ^= static_cast<uint32_t>(it->second);
+  }
+
+  double ut = t.UserTime();
+
+  srand(r);   // keep compiler from optimizing away r (we never call rand())
+  report("map_iterate2", ut, iters, 0, 0);
 }
 
 template<class MapType>
@@ -831,12 +925,17 @@ static void measure_map(const char* label, uint32_t obj_size, uint32_t iters,
   if (1) time_map_grow<MapType>(iters);
   if (1) time_map_grow_predicted<MapType>(iters);
   if (1) time_map_replace<MapType>(iters);
+  if (1) time_map_insert<MapType>(iters);
+  if (1) time_map_insert_predicted<MapType>(iters);
+  if (1) time_map_insert_replace<MapType>(iters);
   if (1) time_map_fetch_random<MapType>(iters);
   if (1) time_map_fetch_sequential<MapType>(iters);
   if (1) time_map_fetch_empty<MapType>(iters);
   if (1) time_map_remove<MapType>(iters);
   if (1) time_map_toggle<MapType>(iters);
+  if (1) time_map_toggle2<MapType>(iters);
   if (1) time_map_iterate<MapType>(iters);
+  if (1) time_map_iterate2<MapType>(iters);
   // This last test is useful only if the map type uses hashing.
   // And it's slow, so use fewer iterations.
   if (stress_hash_function) {
@@ -861,10 +960,12 @@ static void test_all_maps(uint32_t obj_size, uint32_t iters) {
                  EasyUseHashMap<ObjType*, size_t, HashFn> >(
         "STANDARD HASH_MAP", obj_size, iters, stress_hash_function);
 
+#if 0
   if (FLAGS_test_sparse_hash_map)
     measure_map< EasyUseSparseHashMap<ObjType, size_t, HashFn>,
                  EasyUseSparseHashMap<ObjType*, size_t, HashFn> >(
         "SPARSE_HASH_MAP", obj_size, iters, stress_hash_function);
+#endif
 
   if (FLAGS_test_dense_hash_map)
     measure_map< EasyUseDenseHashMap<ObjType, size_t, HashFn>,
