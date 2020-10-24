@@ -96,10 +96,11 @@ extern "C" {
 // The functions that we call on each map, that differ for different types.
 // By default each is a noop, but we redefine them for types that need them.
 
+#include <vector>
 #include <map>
 #include HASH_MAP_H
+#include <atomic>
 #include <algorithm>
-#include <vector>
 #include <sparsehash/type_traits.h>
 #include <sparsehash/dense_hash_map>
 #include <sparsehash/sparse_hash_map>
@@ -515,9 +516,12 @@ inline void Rusage::Reset() {
 #else
   time(&start_time_t);
 #endif
+  std::atomic_signal_fence(std::memory_order_seq_cst);
 }
 
 inline double Rusage::UserTime() {
+  std::atomic_signal_fence(std::memory_order_seq_cst);
+
 #if defined HAVE_SYS_RESOURCE_H
   struct rusage u;
 
@@ -737,7 +741,7 @@ static void time_map_fetch_sequential(uint32_t iters) {
 static void shuffle(vector<uint32_t>* v) {
   srand(9);
   for (size_t n = v->size(); n >= 2; n--) {
-    swap((*v)[n - 1], (*v)[static_cast<unsigned>(rand()) % n]);
+    swap((*v)[n - 1], (*v)[static_cast<size_t>(rand()) % n]);
   }
 }
 
@@ -929,7 +933,7 @@ static void stress_hash_function(int num_inserts) {
 template<class MapType, class StressMapType>
 static void measure_map(const char* label, uint32_t obj_size, uint32_t iters,
                         bool is_stress_hash_function) {
-  printf("\n%s (%d byte objects, %d iterations):\n", label, obj_size, iters);
+  printf("%s (%d byte objects, %d iterations):\n\n", label, obj_size, iters);
   if (1) time_map_grow<MapType>(iters);
   if (1) time_map_grow_predicted<MapType>(iters);
   if (1) time_map_replace<MapType>(iters);
@@ -956,42 +960,42 @@ static void measure_map(const char* label, uint32_t obj_size, uint32_t iters,
   }
 }
 
-template<class ObjType>
+template<class ObjType, typename Value>
 static void test_all_maps(uint32_t obj_size, uint32_t iters) {
-  //const bool is_stress_hash_function = (obj_size <= 8);
+  const bool has_stress_hash_function = (obj_size <= 8);
 
   if (FLAGS_test_map)
-    measure_map< EasyUseMap<ObjType, size_t>,
-                 EasyUseMap<ObjType*, size_t> >(
-        "STANDARD MAP", obj_size, iters, false);
+    measure_map< EasyUseMap<ObjType, Value>,
+                 EasyUseMap<ObjType*, Value> >(
+        "STANDARD MAP", obj_size, iters, has_stress_hash_function);
 
   if (FLAGS_test_hash_map)
-    measure_map< EasyUseHashMap<ObjType, size_t, HashFn>,
-                 EasyUseHashMap<ObjType*, size_t, HashFn> >(
-        "STANDARD HASH_MAP", obj_size, iters, false);
+    measure_map< EasyUseHashMap<ObjType, Value, HashFn>,
+                 EasyUseHashMap<ObjType*, Value, HashFn> >(
+        "STANDARD HASH_MAP", obj_size, iters, has_stress_hash_function);
 
   if (FLAGS_test_sparse_hash_map)
-    measure_map< EasyUseSparseHashMap<ObjType, size_t, HashFn>,
-                 EasyUseSparseHashMap<ObjType*, size_t, HashFn> >(
-        "SPARSE_HASH_MAP", obj_size, iters, false);
+    measure_map< EasyUseSparseHashMap<ObjType, Value, HashFn>,
+                 EasyUseSparseHashMap<ObjType*, Value, HashFn> >(
+        "SPARSE_HASH_MAP", obj_size, iters, has_stress_hash_function);
 
   if (FLAGS_test_dense_hash_map)
-    measure_map< EasyUseDenseHashMap<ObjType, size_t, HashFn>,
-                 EasyUseDenseHashMap<ObjType*, size_t, HashFn> >(
-        "DENSE_HASH_MAP", obj_size, iters, false);
+    measure_map< EasyUseDenseHashMap<ObjType, Value, HashFn>,
+                 EasyUseDenseHashMap<ObjType*, Value, HashFn> >(
+        "DENSE_HASH_MAP", obj_size, iters, has_stress_hash_function);
 
 #ifdef HAVE_GOLD_HASH_MAP
   if (FLAGS_test_gold_hash_map)
-    measure_map< EasyUseGoldHashMap<ObjType, size_t, HashFn>,
-                 EasyUseGoldHashMap<ObjType*, size_t, HashFn> >(
-        "terark::gold_hash_map", obj_size, iters, false);
+    measure_map< EasyUseGoldHashMap<ObjType, Value, HashFn>,
+                 EasyUseGoldHashMap<ObjType*, Value, HashFn> >(
+        "terark::gold_hash_map", obj_size, iters, has_stress_hash_function);
 #endif
 
 #ifdef HAVE_JSTD_HASH_MAP
   if (FLAGS_test_jstd_hash_map)
-    measure_map< EasyUseJStdHashMap<ObjType, size_t, HashFn>,
-                 EasyUseJStdHashMap<ObjType*, size_t, HashFn> >(
-        "jstd::Dictionary", obj_size, iters, false);
+    measure_map< EasyUseJStdHashMap<ObjType, Value, HashFn>,
+                 EasyUseJStdHashMap<ObjType*, Value, HashFn> >(
+        "jstd::Dictionary", obj_size, iters, has_stress_hash_function);
 #endif
 }
 
@@ -1005,8 +1009,9 @@ int main(int argc, char** argv) {
   stamp_run(iters);
 
 #ifndef HAVE_SYS_RESOURCE_H
-  printf("\n*** WARNING ***: sys/resources.h was not found, so all times\n"
-         "                 reported are wall-clock time, not user time\n");
+  printf("\n"
+         "*** WARNING ***: sys/resources.h was not found, so all times\n"
+         "                 reported are wall-clock time, not user time\n\n");
 #endif
 
   // It would be nice to set these at run-time, but by setting them at
@@ -1014,10 +1019,10 @@ int main(int argc, char** argv) {
   // a HashObject as it would be to use just a straight int/char
   // buffer.  To keep memory use similar, we normalize the number of
   // iterations based on size.
-  if (FLAGS_test_4_bytes)  test_all_maps< HashObject<4,4> >(4, iters/1);
-  if (FLAGS_test_8_bytes)  test_all_maps< HashObject<8,8> >(8, iters/2);
-  if (FLAGS_test_16_bytes)  test_all_maps< HashObject<16,16> >(16, iters/4);
-  if (FLAGS_test_256_bytes)  test_all_maps< HashObject<256,32> >(256, iters/32);
+  if (FLAGS_test_4_bytes)    test_all_maps< HashObject<4,4>,    std::uint32_t >(4, iters/1);
+  if (FLAGS_test_8_bytes)    test_all_maps< HashObject<8,8>,    std::size_t   >(8, iters/2);
+  if (FLAGS_test_16_bytes)   test_all_maps< HashObject<16,16>,  std::size_t   >(16, iters/4);
+  if (FLAGS_test_256_bytes)  test_all_maps< HashObject<256,32>, std::size_t   >(256, iters/32);
 
   return 0;
 }
