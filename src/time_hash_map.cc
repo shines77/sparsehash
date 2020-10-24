@@ -176,9 +176,9 @@ using std::unordered_map;
 using HASH_NAMESPACE::hash_map;
 #endif
 
-#define USE_FAST_SIMPLE_HASH      0
+#define USE_FAST_SIMPLE_HASH      1
 
-#ifdef USE_FAST_SIMPLE_HASH
+#if USE_FAST_SIMPLE_HASH
 #undef  SPARSEHASH_HASH
 #define SPARSEHASH_HASH     test::hash
 #endif
