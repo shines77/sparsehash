@@ -315,7 +315,7 @@ template<size_t Size, size_t Hashsize> class HashObject {
     memset(buffer_, 0, sizeof(buffer_));
   }
   HashObject(size_t i) : i_(i) {
-    memset(buffer_, i & 255, sizeof(buffer_));   // a "random" char
+    memset(buffer_, int(i & 255), sizeof(buffer_));   // a "random" char
   }
   HashObject(const HashObject& that) {
     operator=(that);
@@ -455,7 +455,7 @@ class HashFn {
  public:
   template<size_t Size, size_t Hashsize>
   size_t operator()(const HashObject<Size,Hashsize>& obj) const {
-    return obj.Hash();
+    return static_cast<size_t>(obj.Hash());
   }
   // Do the identity hash for pointers.
   template<size_t Size, size_t Hashsize>
@@ -716,7 +716,7 @@ static void time_map_fetch(uint32_t iters, const vector<uint32_t>& indices,
   r = 1;
   t.Reset();
   for (i = 0; i < iters; i++) {
-    r ^= static_cast<int>(set.find(indices[i]) != set.end());
+    r ^= static_cast<uint32_t>(set.find(indices[i]) != set.end());
   }
   double ut = t.UserTime();
 
@@ -910,7 +910,7 @@ static void stress_hash_function(uint32_t desired_insertions,
   }
 
   if (num_insertions != 0) {
-    printf("stresshashfunction map_size=%d stride=%d: %.1fns/insertion\n",
+    printf("stress_hash_function: map_size = %d stride = %d: %.1f ns/insertion\n",
            map_size, stride, total_seconds * 1e9 / num_insertions);
   }
 }
@@ -944,13 +944,15 @@ static void measure_map(const char* label, uint32_t obj_size, uint32_t iters,
   if (0) time_map_toggle2<MapType>(iters);
   if (1) time_map_iterate<MapType>(iters);
   if (0) time_map_iterate2<MapType>(iters);
+  puts("");
+  
   // This last test is useful only if the map type uses hashing.
   // And it's slow, so use fewer iterations.
   if (is_stress_hash_function) {
     // Blank line in the output makes clear that what follows isn't part of the
     // table of results that we just printed.
-    puts("");
     stress_hash_function<StressMapType>(iters / 4);
+    puts("");
   }
 }
 
