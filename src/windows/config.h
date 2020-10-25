@@ -18,10 +18,10 @@
 #define HASH_SET_H  <unordered_set>
 
 /* define if the compiler has hash_map */
-#define HAVE_HASH_MAP  0
+#define HAVE_HASH_MAP  1
 
 /* define if the compiler has hash_set */
-#define HAVE_HASH_SET  0
+#define HAVE_HASH_SET  1
 
 /* define if the compiler supports unordered_{map,set} */
 #define HAVE_UNORDERED_MAP 1
@@ -49,7 +49,7 @@
 #endif
 
 /* Use std::hash() or stdext::hash_compare() for the hash function in bencnmark code. */
-#define USE_STD_HASH_FUNCTION   0
+#define USE_STD_HASH_FUNCTION   1
 
 #if (_MSC_VER >= 1800) && USE_STD_HASH_FUNCTION
 
@@ -62,6 +62,15 @@
 /* The system-provided hash function, in namespace HASH_NAMESPACE. */
 #define SPARSEHASH_HASH_NO_NAMESPACE  hash
 
+/* Define to 1 if you have the <inttypes.h> header file. */
+#define HAVE_INTTYPES_H     1
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#define HAVE_STDINT_H   1
+
+/* Define to 1 if the system has the type `uint16_t'. */
+#define HAVE_UINT16_T   1
+
 #else
 
 /* the namespace of the hash<> function */
@@ -73,13 +82,19 @@
 /* The system-provided hash function, in namespace HASH_NAMESPACE. */
 #define SPARSEHASH_HASH_NO_NAMESPACE  hash_compare
 
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if the system has the type `uint16_t'. */
+#undef HAVE_UINT16_T
+
 #endif
 
 /* Define to 1 if you have the <google/malloc_extension.h> header file. */
 #undef HAVE_GOOGLE_MALLOC_EXTENSION_H
-
-/* Define to 1 if you have the <inttypes.h> header file. */
-#undef HAVE_INTTYPES_H
 
 /* Define to 1 if the system has the type `long long'. */
 #define HAVE_LONG_LONG  1
@@ -91,16 +106,13 @@
 #define HAVE_MEMMOVE  1
 
 /* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
+#define HAVE_MEMORY_H   1
 
 /* define if the compiler implements namespaces */
 #define HAVE_NAMESPACES  1
 
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
-
-/* Define to 1 if you have the <stdint.h> header file. */
-#undef HAVE_STDINT_H
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #define HAVE_STDLIB_H  1
@@ -125,9 +137,6 @@
 
 /* Define to 1 if you have the <sys/utsname.h> header file. */
 #undef HAVE_SYS_UTSNAME_H
-
-/* Define to 1 if the system has the type `uint16_t'. */
-#undef HAVE_UINT16_T
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H

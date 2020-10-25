@@ -19,7 +19,7 @@
 #endif
 
 /* Use std::hash() or stdext::hash_compare() for the hash function in bencnmark code. */
-#define USE_STD_HASH_FUNCTION   0
+#define USE_STD_HASH_FUNCTION   1
 
 #if (_MSC_VER >= 1800) && USE_STD_HASH_FUNCTION
 
@@ -32,6 +32,15 @@
 /* The system-provided hash function, in namespace HASH_NAMESPACE. */
 #define SPARSEHASH_HASH_NO_NAMESPACE  hash
 
+/* Define to 1 if you have the <inttypes.h> header file. */
+#define HAVE_INTTYPES_H     1
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#define HAVE_STDINT_H   1
+
+/* Define to 1 if the system has the type `uint16_t'. */
+#define HAVE_UINT16_T   1
+
 #else
 
 /* the namespace of the hash<> function */
@@ -42,6 +51,15 @@
 
 /* The system-provided hash function, in namespace HASH_NAMESPACE. */
 #define SPARSEHASH_HASH_NO_NAMESPACE  hash_compare
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if the system has the type `uint16_t'. */
+#undef HAVE_UINT16_T
 
 #endif
 
@@ -59,9 +77,6 @@
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #define HAVE_SYS_TYPES_H  1
-
-/* Define to 1 if the system has the type `uint16_t'. */
-#undef HAVE_UINT16_T
 
 /* Define to 1 if the system has the type `u_int16_t'. */
 #undef HAVE_U_INT16_T
