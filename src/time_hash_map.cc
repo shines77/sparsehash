@@ -147,6 +147,10 @@ extern "C" {
 #include <terark/gold_hash_map.hpp>
 #endif
 
+#define PRINT_MACRO_HELPER(x)   #x
+#define PRINT_MACRO(x)          PRINT_MACRO_HELPER(x)
+#define PRINT_MACRO_VAR(x)      #x " = " PRINT_MACRO_HELPER(x)
+
 using std::map;
 using std::swap;
 using std::vector;
@@ -176,7 +180,7 @@ using std::unordered_map;
 using HASH_NAMESPACE::hash_map;
 #endif
 
-#define USE_FAST_SIMPLE_HASH      1
+#define USE_FAST_SIMPLE_HASH      0
 
 #if USE_FAST_SIMPLE_HASH
 #undef  SPARSEHASH_HASH
@@ -1013,6 +1017,8 @@ int main(int argc, char** argv) {
          "*** WARNING ***: sys/resources.h was not found, so all times\n"
          "                 reported are wall-clock time, not user time\n\n");
 #endif
+
+  printf("#define SPARSEHASH_HASH = %s\n\n", PRINT_MACRO(SPARSEHASH_HASH));
 
   // It would be nice to set these at run-time, but by setting them at
   // compile-time, we allow optimizations that make it as fast to use
