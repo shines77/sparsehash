@@ -151,6 +151,14 @@ extern "C" {
 #define PRINT_MACRO(x)          PRINT_MACRO_HELPER(x)
 #define PRINT_MACRO_VAR(x)      #x " = " PRINT_MACRO_HELPER(x)
 
+#if (defined(__cplusplus) && (__cplusplus >= 201103L)) || (defined(_MSC_VER) && (_MSC_VER >= 1800))
+#define HAVE_STD_CHRONO_H   1
+#endif
+
+#if HAVE_STD_CHRONO_H
+#include <chrono>
+#endif
+
 using std::map;
 using std::swap;
 using std::vector;
@@ -490,6 +498,11 @@ class HashFn {
 
 class Rusage {
  public:
+#if HAVE_STD_CHRONO_H
+  typedef std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds>
+                                            time_point_t;
+  typedef std::chrono::duration<double>     duration_type;
+#endif
   /* Start collecting usage */
   Rusage() { Reset(); }
 
@@ -500,7 +513,9 @@ class Rusage {
   double UserTime();
 
  private:
-#if defined HAVE_SYS_RESOURCE_H
+#if HAVE_STD_CHRONO_H
+  time_point_t start;
+#elif defined HAVE_SYS_RESOURCE_H
   struct rusage start;
 #elif defined HAVE_WINDOWS_H
   DWORD start;
@@ -512,13 +527,15 @@ class Rusage {
 inline void Rusage::Reset() {
   g_num_copies = 0;
   g_num_hashes = 0;
-#if defined HAVE_SYS_RESOURCE_H
+#if HAVE_STD_CHRONO_H
+  start = std::chrono::high_resolution_clock::now();
+#elif defined HAVE_SYS_RESOURCE_H
   getrusage(RUSAGE_SELF, &start);
 #elif defined HAVE_WINDOWS_H
   //start = ::GetTickCount();
   start = ::timeGetTime();
 #else
-  time(&start_time_t);
+  ::time(&start_time_t);
 #endif
   std::atomic_signal_fence(std::memory_order_seq_cst);
 }
@@ -526,7 +543,11 @@ inline void Rusage::Reset() {
 inline double Rusage::UserTime() {
   std::atomic_signal_fence(std::memory_order_seq_cst);
 
-#if defined HAVE_SYS_RESOURCE_H
+#if HAVE_STD_CHRONO_H
+  time_point_t end = std::chrono::high_resolution_clock::now();
+  duration_type duration_time = std::chrono::duration_cast<duration_type>(end - start);
+  return duration_time.count();
+#elif defined HAVE_SYS_RESOURCE_H
   struct rusage u;
 
   getrusage(RUSAGE_SELF, &u);
@@ -541,7 +562,7 @@ inline double Rusage::UserTime() {
   return double(::timeGetTime() - start) / 1000.0;
 #else
   time_t now;
-  time(&now);
+  ::time(&now);
   return now - start_time_t;
 #endif
 }
@@ -565,7 +586,7 @@ static void stamp_run(uint32_t iters) {
   printf("Average over %u iterations\n", iters);
   fflush(stdout);
   // don't need asctime_r/gmtime_r: we're not threaded
-  printf("Current time (GMT): %s", asctime(gmtime(&now)));
+  printf("Current time (GMT): %s\n", asctime(gmtime(&now)));
 }
 
 // This depends on the malloc implementation for exactly what it does
@@ -918,7 +939,7 @@ static void stress_hash_function(uint32_t desired_insertions,
   }
 
   if (num_insertions != 0) {
-    printf("stress_hash_function: map_size = %d stride = %d: %.1f ns/insertion\n",
+    printf("stress_hash_function: map_size = %-4d stride = %-4d: %.2f ns/insertion\n",
            map_size, stride, total_seconds * 1e9 / num_insertions);
   }
 }
@@ -1013,8 +1034,7 @@ int main(int argc, char** argv) {
   stamp_run(iters);
 
 #ifndef HAVE_SYS_RESOURCE_H
-  printf("\n"
-         "*** WARNING ***: sys/resources.h was not found, so all times\n"
+  printf("*** WARNING ***: sys/resources.h was not found, so all times\n"
          "                 reported are wall-clock time, not user time\n\n");
 #endif
 
